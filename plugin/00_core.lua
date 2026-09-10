@@ -7,8 +7,6 @@
 
 local MAX_LLM_LINES = 200
 local MAX_LLM_BYTES = 40000
-local MAX_NAVIGATION_LINES = 80
-local MAX_NAVIGATION_BYTES = 10000
 local MAX_RESEARCH_QUERY_CHARS = 20000
 local MAX_RESPONSE_ID_LEN = 512
 local MAX_SEARCH_QUERIES = 3
@@ -20,6 +18,8 @@ local API_BASE = "https://api.parallel.ai"
 local SEARCH_MODE = "fast"
 local RESEARCH_INSTRUCTIONS =
   "Research the user's question using current web sources. Return a direct, evidence-based answer with citations. State uncertainty when the sources do not support a conclusion."
+
+local truncate = require("maki.truncate")
 
 parallel_core = {
   MAX_RESEARCH_QUERY_CHARS = MAX_RESEARCH_QUERY_CHARS,
@@ -120,76 +120,8 @@ function parallel_core.client_model()
   return nil
 end
 
-local function head(text, max_lines, max_bytes)
-  local finish = math.min(#text, max_bytes)
-  while finish > 0 do
-    local next_byte = text:byte(finish + 1)
-    if not next_byte or next_byte < 128 or next_byte >= 192 then
-      break
-    end
-    finish = finish - 1
-  end
-  local start = 1
-  for line = 1, max_lines do
-    local newline = text:find("\n", start, true)
-    if not newline or newline > finish then
-      break
-    end
-    if line == max_lines then
-      finish = newline - 1
-      break
-    end
-    start = newline + 1
-  end
-  return text:sub(1, finish)
-end
-
-local function save_result(text)
-  local state = maki.env.state_dir()
-  if not state then
-    return nil, "could not locate the maki state directory"
-  end
-  local root = maki.fs.joinpath(state, "maki-parallel", "results")
-  local ok, err = maki.fs.mkdir(root, { parents = true })
-  if not ok then
-    return nil, err
-  end
-  for _ = 1, 3 do
-    local dir = maki.fs.joinpath(root, ("%d-%d"):format(os.time(), math.random(1, 2147483647)))
-    ok, err = maki.fs.mkdir(dir)
-    if ok then
-      local path = maki.fs.joinpath(dir, "result.md")
-      ok, err = maki.fs.atomic_write(path, text)
-      if not ok then
-        return nil, err
-      end
-      return path
-    end
-  end
-  return nil, err
-end
-
-function parallel_core.llm(text, navigation)
-  if head(text, MAX_LLM_LINES, MAX_LLM_BYTES) == text then
-    return text
-  end
-  local path, err = save_result(text)
-  local notice
-  if path then
-    notice = "Full result saved to: " .. path .. "\nUse read with offset and limit only if omitted details are needed."
-  else
-    notice = "Full result could not be saved: " .. head(tostring(err):gsub("[\r\n]", " "), 1, 300)
-  end
-  local nav = head(navigation or "", MAX_NAVIGATION_LINES, MAX_NAVIGATION_BYTES)
-  if nav ~= (navigation or "") then
-    nav = nav .. (path and "\n[Source navigation truncated; see full result.]" or "\n[Source navigation truncated.]")
-  end
-  local footer = "\n\n[Preview truncated]\n" .. notice
-  if nav ~= "" then
-    footer = footer .. "\n\n### Source navigation\n" .. nav
-  end
-  local _, footer_lines = footer:gsub("\n", "")
-  return head(text, MAX_LLM_LINES - footer_lines, MAX_LLM_BYTES - #footer) .. footer
+function parallel_core.llm(text)
+  return truncate(text, MAX_LLM_LINES, MAX_LLM_BYTES)
 end
 
 function parallel_core.fail(msg)

@@ -4,127 +4,55 @@
 
 local core = parallel_core
 
-local function single_line(text)
-  return (text:gsub("\r", "\\r"):gsub("\n", "\\n"))
+local function render_search(data)
+  local out = {}
+  for i, r in ipairs(data.results or {}) do
+    out[#out + 1] = ("## %d. %s"):format(i, r.title or r.url or "untitled")
+    if r.url then
+      out[#out + 1] = r.url
+    end
+    if r.publish_date then
+      out[#out + 1] = "Published: " .. r.publish_date
+    end
+    for _, excerpt in ipairs(r.excerpts or {}) do
+      out[#out + 1] = ""
+      out[#out + 1] = excerpt
+    end
+    out[#out + 1] = ""
+  end
+  if #out == 0 then
+    return "No results found."
+  end
+  return table.concat(out, "\n")
 end
 
-local function append_unique(values, value)
-  if value == nil then
-    return
-  end
-  for _, existing in ipairs(values) do
-    if existing == value then
-      return
+local function render_fetch(data)
+  local out = {}
+  for _, r in ipairs(data.results or {}) do
+    out[#out + 1] = "## " .. (r.title or r.url or "untitled")
+    if r.url then
+      out[#out + 1] = r.url
     end
-  end
-  values[#values + 1] = value
-end
-
-local function clean_excerpt(text, record)
-  local lines = {}
-  for line in (text .. "\n"):gmatch("(.-)\n") do
-    lines[#lines + 1] = line
-  end
-  local first = 1
-  while first <= #lines do
-    local line = lines[first]:gsub("\r$", "")
-    if line:match("^    ") or line:match("^ *\t") or line:match("^ ? ? ?```") or line:match("^ ? ? ?~~~") then
-      break
+    if r.publish_date then
+      out[#out + 1] = "Published: " .. r.publish_date
     end
-    local hashes, title = line:match("^ ? ? ?(#+)[ \t]+(.-)[ \t]*$")
-    local heading = hashes and #hashes <= 6 and title:gsub("[ \t]+#+$", "")
-    if line == "" or line == record.title or line == record.url or (heading and heading == record.title) then
-      first = first + 1
-    else
-      break
+    local chunks = r.excerpts or {}
+    if core.is_nonblank(r.full_content) then
+      chunks = { r.full_content }
     end
-  end
-  local content = table.concat(lines, "\n", first)
-  if content:find("```", 1, true) or content:find("~~~", 1, true) or content:find("<", 1, true) then
-    return content
-  end
-  for i = first, #lines do
-    if lines[i]:match("^[ \t]+%S") then
-      return content
-    end
-  end
-  return (content:gsub("\n\n\n+", "\n\n"))
-end
-
-local function group_results(results, fetch)
-  local groups, by_url = {}, {}
-  for _, r in ipairs(results or {}) do
-    local group = core.is_nonblank(r.url) and by_url[r.url]
-    if not group then
-      group = { url = r.url, titles = {}, dates = {}, chunks = {}, excerpts = {}, documents = {} }
-      groups[#groups + 1] = group
-      if core.is_nonblank(r.url) then
-        by_url[r.url] = group
-      end
-    end
-    append_unique(group.titles, r.title)
-    append_unique(group.dates, r.publish_date)
-    local full = fetch and core.is_nonblank(r.full_content)
-    local seen = full and group.documents or group.excerpts
-    for _, chunk in ipairs(full and { r.full_content } or r.excerpts or {}) do
-      if not seen[chunk] then
-        seen[chunk] = true
-        local text = full and chunk or clean_excerpt(chunk, r)
-        if text ~= "" then
-          group.chunks[#group.chunks + 1] = text
-        end
-      end
-    end
-  end
-  return groups
-end
-
-local function render_results(data, fetch)
-  local out, navigation = {}, {}
-  for i, group in ipairs(group_results(data.results, fetch)) do
-    local metadata = {
-      "## " .. (fetch and "" or (i .. ". ")) .. single_line(group.titles[1] or group.url or "untitled"),
-    }
-    for j = 2, #group.titles do
-      metadata[#metadata + 1] = "Title: " .. single_line(group.titles[j])
-    end
-    if group.url then
-      metadata[#metadata + 1] = single_line(group.url)
-    end
-    for _, date in ipairs(group.dates) do
-      metadata[#metadata + 1] = "Published: " .. single_line(date)
-    end
-    local heading = table.concat(metadata, "\n")
-    navigation[#navigation + 1] = heading
-    out[#out + 1] = heading
-    for _, chunk in ipairs(group.chunks) do
+    for _, chunk in ipairs(chunks) do
       out[#out + 1] = ""
       out[#out + 1] = chunk
     end
     out[#out + 1] = ""
   end
-  if fetch then
-    for _, e in ipairs(data.errors or {}) do
-      local message = ("Failed: %s (%s)"):format(
-        single_line(e.url or "unknown URL"),
-        single_line(e.message or "unknown error")
-      )
-      out[#out + 1] = message
-      navigation[#navigation + 1] = message
-    end
+  for _, e in ipairs(data.errors or {}) do
+    out[#out + 1] = ("Failed: %s (%s)"):format(e.url or "unknown URL", e.message or "unknown error")
   end
   if #out == 0 then
-    return fetch and "No content extracted." or "No results found.", ""
+    return "No content extracted."
   end
-  return table.concat(out, "\n"), table.concat(navigation, "\n\n")
-end
-
-local function render_search(data)
-  return render_results(data, false)
-end
-
-local function render_fetch(data)
-  return render_results(data, true)
+  return table.concat(out, "\n")
 end
 
 local function render_research(data)
@@ -151,26 +79,18 @@ local function render_research(data)
   if not answer:match("%S") then
     return nil, "Parallel returned an empty research response"
   end
-  local out, navigation = {}, {}
+  local out = {}
   if core.is_nonblank(data.id) then
-    local response_id = "Response ID: " .. single_line(data.id)
-    out[#out + 1] = response_id .. "\n"
-    navigation[#navigation + 1] = response_id
+    out[#out + 1] = "Response ID: " .. data.id .. "\n"
   end
   out[#out + 1] = answer
   if #sources > 0 then
     out[#out + 1] = "\n### Sources"
-    navigation[#navigation + 1] = "\n### Sources"
     for _, s in ipairs(sources) do
-      local source = ("- [%s](%s)"):format(
-        single_line(core.is_nonblank(s.title) and s.title or s.url),
-        single_line(s.url)
-      )
-      out[#out + 1] = source
-      navigation[#navigation + 1] = source
+      out[#out + 1] = ("- [%s](%s)"):format(core.is_nonblank(s.title) and s.title or s.url, s.url)
     end
   end
-  return table.concat(out, "\n"), nil, table.concat(navigation, "\n")
+  return table.concat(out, "\n")
 end
 
 maki.api.register_tool({
@@ -330,10 +250,10 @@ Start with the complete, self-contained question including constraints; research
     if not data then
       return core.fail(req_err)
     end
-    local rendered, render_err, navigation = render_research(data)
+    local rendered, render_err = render_research(data)
     if not rendered then
       return core.fail(render_err)
     end
-    return { llm_output = core.llm(rendered, navigation), format = "markdown" }
+    return { llm_output = core.llm(rendered), format = "markdown" }
   end,
 })
