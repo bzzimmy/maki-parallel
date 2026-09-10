@@ -11,3 +11,4 @@ maki-lua = { git = "https://github.com/tontinton/maki", rev = "4d847507a0f23a07a
 maki-storage = { git = "https://github.com/tontinton/maki", rev = "4d847507a0f23a07adc3074fbb1f9e148fb33c53" }
 serde_json = "1"
 smol = "2"
+tempfile = "3"

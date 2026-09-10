@@ -2278,6 +2278,7 @@ dependencies = [
  "maki-storage",
  "serde_json",
  "smol",
+ "tempfile",
 ]
 
 [[package]]
