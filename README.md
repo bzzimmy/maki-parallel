@@ -17,7 +17,7 @@ Add the package in `~/.config/maki/init.lua`:
 
 ```lua
 maki.pack.add({
-  { src = "https://github.com/<owner>/maki-parallel", version = "main" },
+  { src = "https://github.com/bzzimmy/maki-parallel", version = "main" },
 })
 ```
 
@@ -56,11 +56,11 @@ read `PARALLEL_API_KEY`, `fs_read` and `fs_write` for the stored key.
 
 ## Development
 
-Checks run inside a project generated from this template:
+Clone the repository and run the checks from its root. The test command requires
+`cargo-nextest`.
 
+```sh
+git clone https://github.com/bzzimmy/maki-parallel.git
+cd maki-parallel
+just check && just lint && just test
 ```
-cargo generate --path . --name ci-check
-cd ci-check && just check && just lint && just test
-```
-
-`plan/SPEC.md` describes the design.
