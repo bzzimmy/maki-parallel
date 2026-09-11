@@ -10,14 +10,8 @@ maki lua plugins extend maki with tools, commands, keybindings, and event handle
 
 ## Testing
 
-This repository is a cargo-generate template. The Rust checks run inside a project generated from it, not at the root:
-
-```
-cargo generate --path . --name ci-check
-cd ci-check && just check && just lint && just test
-```
-
-CI does the same in `.github/workflows/template.yml`. Cheapest first:
+Run the checks from the repository root. CI does the same in
+`.github/workflows/plugin.yml`. Cheapest first:
 
 - `just check`
 - `just lint`
