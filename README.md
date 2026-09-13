@@ -1,10 +1,9 @@
 <h1><img src="assets/parallel-logo-white.svg" alt="Parallel" width="40" align="absmiddle"> maki-parallel</h1>
 
 Context-efficient web access for [maki](https://github.com/tontinton/maki),
-backed by the [Parallel API](https://parallel.ai). Three tools replace the
+backed by the [Parallel API](https://parallel.ai). Two tools replace the
 built-in web tools with retrieval that is ranked and compressed for agents:
-search returns focused excerpts, fetch returns clean markdown, research
-returns a synthesized answer with citations.
+search returns focused excerpts, fetch returns clean markdown.
 
 ## Requirements
 
@@ -45,7 +44,6 @@ key.
 | --- | --- | --- |
 | `web_search` | Search (`/v1/search`) | Source discovery: titles, URLs, dates, focused excerpts. Always runs in `fast` mode. |
 | `web_fetch` | Extract (`/v1/extract`) | Reading known URLs as markdown. Handles JavaScript-heavy pages and PDFs. Batch up to 20 URLs per call. |
-| `web_research` | Responses (`/v1/responses`) | A complete, cited answer to a self-contained question. `effort` sets depth; follow-ups pass `previous_response_id`. |
 
 Disable maki's built-in web tools in your config so the agent picks these.
 

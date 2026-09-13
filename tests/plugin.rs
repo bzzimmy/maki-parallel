@@ -65,7 +65,7 @@ fn exec_tool(
 #[test]
 fn tools_register() {
     let (reg, _host) = plugin_host();
-    for tool in ["web_search", "web_fetch", "web_research"] {
+    for tool in ["web_search", "web_fetch"] {
         assert!(reg.has(tool), "tool {tool} should register");
     }
 }
@@ -141,42 +141,6 @@ fn web_fetch_validates_input_before_any_network() {
 }
 
 #[test]
-fn web_research_validates_input_before_any_network() {
-    let (reg, host) = plugin_host();
-
-    let err = exec_tool(&reg, &host, "web_research", json!({})).unwrap_err();
-    assert_eq!(err, "invalid parameter 'query': required, expected string");
-
-    let err = exec_tool(&reg, &host, "web_research", json!({ "query": "  " })).unwrap_err();
-    assert!(err.contains("query is required"), "got: {err}");
-
-    let err = exec_tool(
-        &reg,
-        &host,
-        "web_research",
-        json!({ "query": "q", "effort": "extreme" }),
-    )
-    .unwrap_err();
-    assert!(
-        err.contains("expected one of [low, medium, high]"),
-        "got: {err}"
-    );
-
-    let long = "x".repeat(20_001);
-    let err = exec_tool(&reg, &host, "web_research", json!({ "query": long })).unwrap_err();
-    assert!(err.contains("20000"), "got: {err}");
-
-    let err = exec_tool(
-        &reg,
-        &host,
-        "web_research",
-        json!({ "query": "q", "previous_response_id": "has spaces" }),
-    )
-    .unwrap_err();
-    assert!(err.contains("previous_response_id"), "got: {err}");
-}
-
-#[test]
 fn tools_fail_fast_without_an_api_key() {
     const CHILD: &str = "MAKI_PARALLEL_TEST_WITHOUT_KEY";
     if std::env::var_os(CHILD).is_none() {
@@ -213,7 +177,6 @@ fn tools_fail_fast_without_an_api_key() {
             json!({ "objective": "goal", "search_queries": ["rust async runtime"] }),
         ),
         ("web_fetch", json!({ "urls": ["https://example.com"] })),
-        ("web_research", json!({ "query": "rust async runtime" })),
     ] {
         let err = exec_tool(&reg, &host, name, input).unwrap_err();
         assert!(err.contains("no Parallel API key"), "{name}: {err}");
