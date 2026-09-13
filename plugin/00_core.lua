@@ -7,27 +7,18 @@
 
 local MAX_LLM_LINES = 200
 local MAX_LLM_BYTES = 40000
-local MAX_RESEARCH_QUERY_CHARS = 20000
-local MAX_RESPONSE_ID_LEN = 512
 local MAX_SEARCH_QUERIES = 3
 local MAX_FETCH_URLS = 20
 local DEFAULT_TIMEOUT_SECONDS = 30
-local RESEARCH_TIMEOUT_SECONDS = 120
 
 local API_BASE = "https://api.parallel.ai"
 local SEARCH_MODE = "fast"
-local RESEARCH_INSTRUCTIONS =
-  "Research the user's question using current web sources. Return a direct, evidence-based answer with citations. State uncertainty when the sources do not support a conclusion."
 
 local truncate = require("maki.truncate")
 
 parallel_core = {
-  MAX_RESEARCH_QUERY_CHARS = MAX_RESEARCH_QUERY_CHARS,
-  MAX_RESPONSE_ID_LEN = MAX_RESPONSE_ID_LEN,
   MAX_FETCH_URLS = MAX_FETCH_URLS,
   SEARCH_MODE = SEARCH_MODE,
-  RESEARCH_INSTRUCTIONS = RESEARCH_INSTRUCTIONS,
-  RESEARCH_TIMEOUT_SECONDS = RESEARCH_TIMEOUT_SECONDS,
 }
 
 function parallel_core.key_file_path()
