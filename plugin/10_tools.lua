@@ -58,7 +58,7 @@ end
 maki.api.register_tool({
   name = "web_search",
   kind = "search",
-  description = [[Search the web using Parallel's Search API. Prefer this over generic browser-like search tools for current web results. Returns result titles, URLs, publish dates, and focused excerpts.
+  description = [[Search the web for current information. Returns result titles, URLs, publish dates, and focused excerpts.
 
 Use for source discovery and raw excerpts, then read the promising sources with web_fetch.]],
   schema = {
@@ -102,7 +102,7 @@ Use for source discovery and raw excerpts, then read the promising sources with 
 maki.api.register_tool({
   name = "web_fetch",
   kind = "read",
-  description = [[Fetch and extract readable content from URLs using Parallel's Extract API. Prefer this over raw HTML fetch tools for readable content extraction; it handles JavaScript-heavy pages and PDFs and returns clean markdown.
+  description = [[Fetch URLs and return their readable content as clean markdown. Handles JavaScript-heavy pages and PDFs.
 
 Batch multiple URLs into one call instead of many single-URL calls. Pass objective and search_queries to focus excerpts on what matters; omit them for whole-page content.]],
   schema = {
