@@ -36,7 +36,7 @@ local function login(key)
     width = "60%",
     height = 3,
     needs_input = true,
-    footer = { { "enter", "save" }, { "esc", "cancel" } },
+    footer = { { "Enter", "save" }, { "Esc", "cancel" } },
   })
   maki.async.run(function()
     local function render()
@@ -50,9 +50,9 @@ local function login(key)
         break
       end
       if ev.type == "key" then
-        if ev.key == "esc" then
+        if ev.key == "<Esc>" then
           break
-        elseif ev.key == "enter" then
+        elseif ev.key == "<CR>" then
           local value = input:value():gsub("%s", "")
           if value ~= "" then
             store_key(value, "paste")
