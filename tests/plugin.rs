@@ -57,9 +57,76 @@ fn exec_tool(
     ))
     .output
     .map_or_else(Err, |out| match out {
-        ToolOutput::Plain(s) => Ok(s.text),
+        ToolOutput::Plain(s) | ToolOutput::Markdown(s) => Ok(s.text),
         other => panic!("unexpected output: {other:?}"),
     })
+}
+
+fn response_host(body: serde_json::Value) -> (Arc<ToolRegistry>, PluginHost) {
+    let reg = Arc::new(ToolRegistry::new());
+    let host = PluginHost::new(Arc::clone(&reg)).unwrap();
+    let body = serde_json::to_string(&body.to_string()).unwrap();
+    host.load_source(
+        PLUGIN_NAME,
+        &format!(
+            "{}\n\
+             parallel_core.resolve_key = function() return 'test-key' end\n\
+             maki.net.request = function() return {{ status = 200, body = {body} }} end\n\
+             {}",
+            include_str!("../plugin/00_core.lua"),
+            include_str!("../plugin/10_tools.lua"),
+        ),
+    )
+    .unwrap();
+    (reg, host)
+}
+
+#[test]
+fn web_search_renders_null_result_fields() {
+    let (reg, host) = response_host(json!({
+        "results": [{
+            "title": null,
+            "url": "https://example.com",
+            "publish_date": null,
+            "excerpts": ["Search excerpt", null]
+        }]
+    }));
+    let output = exec_tool(
+        &reg,
+        &host,
+        "web_search",
+        json!({ "objective": "goal", "search_queries": ["query"] }),
+    )
+    .unwrap();
+    assert_eq!(
+        output,
+        "## 1. https://example.com\nhttps://example.com\n\nSearch excerpt\n"
+    );
+}
+
+#[test]
+fn web_fetch_renders_null_result_fields() {
+    let (reg, host) = response_host(json!({
+        "results": [{
+            "title": null,
+            "url": "https://example.com",
+            "publish_date": null,
+            "excerpts": ["Fetched excerpt", null],
+            "full_content": null
+        }],
+        "errors": null
+    }));
+    let output = exec_tool(
+        &reg,
+        &host,
+        "web_fetch",
+        json!({ "urls": ["https://example.com"] }),
+    )
+    .unwrap();
+    assert_eq!(
+        output,
+        "## https://example.com\nhttps://example.com\n\nFetched excerpt\n"
+    );
 }
 
 #[test]

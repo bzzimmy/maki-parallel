@@ -77,7 +77,7 @@ local function request(method, path, payload, timeout)
   if not res then
     return nil, req_err
   end
-  local data = maki.json.decode(res.body)
+  local data = maki.json.decode(res.body, { luanil = { object = true, array = true } })
   if res.status >= 400 then
     local msg = res.body:sub(1, 300)
     if type(data) == "table" then
