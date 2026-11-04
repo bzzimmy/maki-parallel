@@ -7,7 +7,7 @@ search returns focused excerpts, fetch returns clean markdown.
 
 ## Requirements
 
-- maki 0.4.12 or newer
+- maki 0.5.6 or newer
 - A Parallel API key from [platform.parallel.ai](https://platform.parallel.ai)
 
 ## Install

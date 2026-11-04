@@ -50,7 +50,7 @@ local function login(key)
         break
       end
       if ev.type == "key" then
-        if ev.key == "<Esc>" then
+        if ev.key == "<Esc>" or ev.key == "<C-c>" then
           break
         elseif ev.key == "<CR>" then
           local value = input:value():gsub("%s", "")
